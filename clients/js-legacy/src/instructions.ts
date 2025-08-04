@@ -31,6 +31,7 @@ export type StakePoolInstructionType =
   | 'CleanupRemovedValidatorEntries'
   | 'DepositStake'
   | 'DepositSol'
+  | 'DepositWsol'
   | 'WithdrawStake'
   | 'WithdrawSol'
   | 'IncreaseAdditionalValidatorStake'
@@ -138,6 +139,13 @@ export const STAKE_POOL_INSTRUCTION_LAYOUTS: {
   /// representing ownership into the pool. Inputs are converted to the current ratio.
   DepositSol: {
     index: 14,
+    layout: BufferLayout.struct<any>([
+      BufferLayout.u8('instruction'),
+      BufferLayout.ns64('lamports'),
+    ]),
+  },
+  DepositWsol: {
+    index: 23,
     layout: BufferLayout.struct<any>([
       BufferLayout.u8('instruction'),
       BufferLayout.ns64('lamports'),
@@ -337,6 +345,24 @@ export type DepositSolParams = {
   poolMint: PublicKey;
   lamports: number;
 };
+
+/**
+ * Deposit wSOL directly into the pool's reserve account. The output is a "pool" token
+ * representing ownership into the pool. Inputs are converted to the current ratio.
+ */
+export type DepositWsolParams = {
+  programId?: PublicKey | undefined;
+  stakePool: PublicKey;
+  withdrawAuthority: PublicKey;
+  depositAuthority: PublicKey;
+  sourceWsolAccount: PublicKey;
+  destinationPoolAccount: PublicKey;
+  managerFeeAccount: PublicKey;
+  referralPoolAccount: PublicKey;
+  poolMint: PublicKey;
+  lamports: number;
+};
+
 
 export type CreateTokenMetadataParams = {
   programId?: PublicKey | undefined;
@@ -884,6 +910,46 @@ export class StakePoolInstruction {
       data,
     });
   }
+
+  /**
+   * Creates a transaction instruction to deposit wSOL into a stake pool.
+   */
+  static depositWsol(params: DepositWsolParams): TransactionInstruction {
+    const {
+      programId,
+      stakePool,
+      withdrawAuthority,
+      depositAuthority,
+      sourceWsolAccount,
+      destinationPoolAccount,
+      managerFeeAccount,
+      referralPoolAccount,
+      poolMint,
+      lamports,
+    } = params;
+
+    const type = STAKE_POOL_INSTRUCTION_LAYOUTS.DepositWsol;
+    const data = encodeData(type, { lamports });
+
+    const keys = [
+      { pubkey: stakePool, isSigner: false, isWritable: true },
+      { pubkey: withdrawAuthority, isSigner: false, isWritable: false },
+      { pubkey: depositAuthority, isSigner: true, isWritable: false },
+      { pubkey: sourceWsolAccount, isSigner: false, isWritable: true },
+      { pubkey: destinationPoolAccount, isSigner: false, isWritable: true },
+      { pubkey: managerFeeAccount, isSigner: false, isWritable: true },
+      { pubkey: referralPoolAccount, isSigner: false, isWritable: true },
+      { pubkey: poolMint, isSigner: false, isWritable: true },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    ];
+
+    return new TransactionInstruction({
+      programId: programId ?? STAKE_POOL_PROGRAM_ID,
+      keys,
+      data,
+    });
+  }
+
 
   /**
    * Creates a transaction instruction to withdraw active stake from a stake pool.

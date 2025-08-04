@@ -10,8 +10,13 @@ import {
   TransactionInstruction,
 } from '@solana/web3.js';
 import {
+  AccountLayout,
+  NATIVE_MINT,
+  TOKEN_PROGRAM_ID,
   createApproveInstruction,
   createAssociatedTokenAccountIdempotentInstruction,
+  createInitializeAccountInstruction,
+  createTransferInstruction,
   getAccount,
   getAssociatedTokenAddressSync,
 } from '@solana/spl-token';
@@ -44,6 +49,7 @@ import {
   MINIMUM_ACTIVE_STAKE,
   STAKE_POOL_PROGRAM_ID,
   DEVNET_STAKE_POOL_PROGRAM_ID,
+  FOGO_STAKE_POOL_PROGRAM_ID,
 } from './constants';
 import { create } from 'superstruct';
 import BN from 'bn.js';
@@ -81,6 +87,8 @@ export interface StakePoolAccounts {
 export function getStakePoolProgramId(rpcEndpoint: string): PublicKey {
   if (rpcEndpoint.includes('devnet')) {
     return DEVNET_STAKE_POOL_PROGRAM_ID;
+  } else if (rpcEndpoint.includes('fogo')) {
+    return FOGO_STAKE_POOL_PROGRAM_ID;
   } else {
     return STAKE_POOL_PROGRAM_ID;
   }
@@ -340,6 +348,101 @@ export async function depositSol(
       lamports,
       withdrawAuthority,
       depositAuthority,
+    }),
+  );
+
+  return {
+    instructions,
+    signers,
+  };
+}
+
+/**
+ * Creates instructions required to deposit wSOL to a stake pool.
+ */
+export async function depositWsol(
+  connection: Connection,
+  stakePoolAddress: PublicKey,
+  from: PublicKey,
+  lamports: number,
+  destinationTokenAccount?: PublicKey,
+  referrerTokenAccount?: PublicKey,
+  depositAuthority?: PublicKey,
+) {
+  const stakePoolAccount = await getStakePoolAccount(connection, stakePoolAddress);
+  const stakePoolProgramId = getStakePoolProgramId(connection.rpcEndpoint);
+  const stakePool = stakePoolAccount.account.data;
+
+  // Check wSOL balance
+  const fromWsolAccount = getAssociatedTokenAddressSync(NATIVE_MINT, from);
+  const fromWsolBalance = await connection.getTokenAccountBalance(fromWsolAccount, 'confirmed');
+  if (new BN(fromWsolBalance.value.amount).lt(new BN(lamports))) {
+    throw new Error(
+      `Not enough wSOL to deposit into pool. Maximum deposit amount is ${fromWsolBalance.value.uiAmountString} wSOL.`,
+    );
+  }
+
+  const userWsolTransfer = new Keypair();
+  const signers: Signer[] = [userWsolTransfer];
+  const instructions: TransactionInstruction[] = [];
+
+  const rent = await connection.getMinimumBalanceForRentExemption(AccountLayout.span);
+  instructions.push(
+    SystemProgram.createAccount({
+      fromPubkey: from,
+      newAccountPubkey: userWsolTransfer.publicKey,
+      lamports: rent,
+      space: AccountLayout.span,
+      programId: TOKEN_PROGRAM_ID,
+    }),
+  );
+
+  instructions.push(
+    createInitializeAccountInstruction(userWsolTransfer.publicKey, NATIVE_MINT, from),
+  );
+
+  instructions.push(
+    createTransferInstruction(
+      fromWsolAccount,
+      userWsolTransfer.publicKey,
+      from,
+      lamports,
+      [],
+      TOKEN_PROGRAM_ID,
+    ),
+  );
+
+  // Create token account if not specified
+  if (!destinationTokenAccount) {
+    const associatedAddress = getAssociatedTokenAddressSync(stakePool.poolMint, from);
+    instructions.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        from,
+        associatedAddress,
+        from,
+        stakePool.poolMint,
+      ),
+    );
+    destinationTokenAccount = associatedAddress;
+  }
+
+  const withdrawAuthority = await findWithdrawAuthorityProgramAddress(
+    stakePoolProgramId,
+    stakePoolAddress,
+  );
+
+  instructions.push(
+    StakePoolInstruction.depositWsol({
+      programId: stakePoolProgramId,
+      stakePool: stakePoolAddress,
+      withdrawAuthority: withdrawAuthority,
+      depositAuthority: from,
+      sourceWsolAccount: userWsolTransfer.publicKey,
+      destinationPoolAccount: destinationTokenAccount,
+      managerFeeAccount: stakePool.managerFeeAccount,
+      referralPoolAccount: referrerTokenAccount ?? destinationTokenAccount,
+      poolMint: stakePool.poolMint,
+      lamports,
     }),
   );
 

@@ -1496,7 +1496,7 @@ fn command_deposit_wsol(
         9, // WSOL has 9 decimals
     )?);
 
-    // 3. Deposit wSOL into the pool
+    // 4. Deposit wSOL into the pool
     let mut total_rent_free_balances: u64 = 0;
 
     let pool_token_receiver_account =
