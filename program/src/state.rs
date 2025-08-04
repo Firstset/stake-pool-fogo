@@ -2,8 +2,8 @@
 
 use {
     crate::{
-        big_vec::BigVec, error::StakePoolError, MAX_WITHDRAWAL_FEE_INCREASE,
-        WITHDRAWAL_BASELINE_FEE,
+        auth::extract_user_from_signer_or_session, big_vec::BigVec, error::StakePoolError,
+        MAX_WITHDRAWAL_FEE_INCREASE, WITHDRAWAL_BASELINE_FEE,
     },
     borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
     bytemuck::{Pod, Zeroable},
@@ -348,20 +348,25 @@ impl StakePool {
 
     /// Checks that the deposit authority is valid
     /// Does nothing if `sol_deposit_authority` is currently not set
+    /// Supports both direct signing and session-based signing
     #[inline]
     pub(crate) fn check_sol_deposit_authority(
         &self,
         maybe_sol_deposit_authority: Result<&AccountInfo, ProgramError>,
+        program_id: &Pubkey,
     ) -> Result<(), ProgramError> {
         if let Some(auth) = self.sol_deposit_authority {
             let sol_deposit_authority = maybe_sol_deposit_authority?;
-            if auth != *sol_deposit_authority.key {
-                msg!("Expected {}, received {}", auth, sol_deposit_authority.key);
+            
+            // Extract user from signer or session account
+            let user_key = extract_user_from_signer_or_session(
+                sol_deposit_authority,
+                program_id,
+            )?;
+            
+            if auth != user_key {
+                msg!("Expected {}, received {}", auth, user_key);
                 return Err(StakePoolError::InvalidSolDepositAuthority.into());
-            }
-            if !sol_deposit_authority.is_signer {
-                msg!("SOL Deposit authority signature missing");
-                return Err(StakePoolError::SignatureMissing.into());
             }
         }
         Ok(())
@@ -369,19 +374,24 @@ impl StakePool {
 
     /// Checks that the sol withdraw authority is valid
     /// Does nothing if `sol_withdraw_authority` is currently not set
+    /// Supports both direct signing and session-based signing
     #[inline]
     pub(crate) fn check_sol_withdraw_authority(
         &self,
         maybe_sol_withdraw_authority: Result<&AccountInfo, ProgramError>,
+        program_id: &Pubkey,
     ) -> Result<(), ProgramError> {
         if let Some(auth) = self.sol_withdraw_authority {
             let sol_withdraw_authority = maybe_sol_withdraw_authority?;
-            if auth != *sol_withdraw_authority.key {
+            
+            // Extract user from signer or session account
+            let user_key = extract_user_from_signer_or_session(
+                sol_withdraw_authority,
+                program_id,
+            )?;
+            
+            if auth != user_key {
                 return Err(StakePoolError::InvalidSolWithdrawAuthority.into());
-            }
-            if !sol_withdraw_authority.is_signer {
-                msg!("SOL withdraw authority signature missing");
-                return Err(StakePoolError::SignatureMissing.into());
             }
         }
         Ok(())

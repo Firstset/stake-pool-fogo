@@ -1,6 +1,7 @@
 //! Program state processor
 
 use {
+    crate::auth::extract_user_from_signer_or_session,
     crate::{
         error::StakePoolError,
         find_deposit_authority_program_address,
@@ -44,6 +45,7 @@ use {
         state::Mint,
     },
     std::num::NonZeroU32,
+    fogo_sessions_sdk::session::{is_session, Session},
 };
 
 /// Deserialize the stake state from `AccountInfo`
@@ -330,6 +332,53 @@ fn create_stake_account(
 /// Program state handler.
 pub struct Processor {}
 impl Processor {
+    // /// Extract user public key from either direct signer or session account
+    // pub(crate) fn extract_user_from_signer_or_session(
+    //     account_info: &AccountInfo,
+    //     program_id: &Pubkey,
+    // ) -> Result<Pubkey, ProgramError> {
+    //     if is_session(account_info) {
+    //         Session::extract_user_from_signer_or_session(account_info, program_id)
+    //             .map_err(|_| StakePoolError::SessionValidationFailed.into())
+    //     } else {
+    //         if !account_info.is_signer {
+    //             return Err(StakePoolError::SignatureMissing.into());
+    //         }
+    //         Ok(*account_info.key)
+    //     }
+    // }
+
+    // /// Validate that the extracted user key matches expected authority
+    // fn validate_user_authority(
+    //     user_key: &Pubkey,
+    //     expected_key: &Pubkey,
+    // ) -> ProgramResult {
+    //     if user_key != expected_key {
+    //         msg!("Invalid user authority: expected {}, got {}", expected_key, user_key);
+    //         return Err(StakePoolError::InvalidAuthority.into());
+    //     }
+    //     Ok(())
+    // }
+
+    // /// Check if operation is session-based
+    
+    // fn is_session_operation(account_info: &AccountInfo) -> bool {
+    //     is_session(account_info)
+    // }
+
+    // /// Validate session context if needed
+    // pub(crate) fn validate_session_context(
+    //     account_info: &AccountInfo,
+    //     program_id: &Pubkey,
+    // ) -> ProgramResult {
+    //     if is_session(account_info) {
+    //         // Additional session validation can be added here if needed
+    //         Session::extract_user_from_signer_or_session(account_info, program_id)
+    //             .map_err(|_| ProgramError::from(StakePoolError::InvalidSession))?;
+    //     }
+    //     Ok(())
+    // }
+
     /// Issue a `delegate_stake` instruction.
     #[allow(clippy::too_many_arguments)]
     fn stake_delegate<'a>(
@@ -1231,9 +1280,11 @@ impl Processor {
         if wsol_account.amount != deposit_lamports {
             return Err(ProgramError::InvalidAccountData);
         }
-        if !user_authority_info.is_signer {
-            return Err(StakePoolError::SignatureMissing.into());
-        }
+        // Extract user from signer or session account for WSOL deposit
+        let _user_key = extract_user_from_signer_or_session(
+            user_authority_info,
+            program_id,
+        )?;
 
         Self::token_close_account(
             token_program_info.clone(),
@@ -2680,7 +2731,7 @@ impl Processor {
             program_id,
             stake_pool_info.key,
         )?;
-        stake_pool.check_sol_deposit_authority(sol_deposit_authority_info)?;
+        stake_pool.check_sol_deposit_authority(sol_deposit_authority_info, program_id)?;
         stake_pool.check_mint(pool_mint_info)?;
         stake_pool.check_reserve_stake(reserve_stake_account_info)?;
 
@@ -3143,7 +3194,7 @@ impl Processor {
             program_id,
             stake_pool_info.key,
         )?;
-        stake_pool.check_sol_withdraw_authority(sol_withdraw_authority_info)?;
+        stake_pool.check_sol_withdraw_authority(sol_withdraw_authority_info, program_id)?;
         let decimals = stake_pool.check_mint(pool_mint_info)?;
         stake_pool.check_reserve_stake(reserve_stake_info)?;
 
@@ -3807,6 +3858,9 @@ impl PrintProgramError for StakePoolError {
             StakePoolError::IncorrectMintDecimals => msg!("Error: Provided mint does not have 9 decimals to match SOL"),
             StakePoolError::ReserveDepleted => msg!("Error: Pool reserve does not have enough lamports to fund rent-exempt reserve in split destination. Deposit more SOL in reserve, or pre-fund split destination with the rent-exempt reserve for a stake account."),
             StakePoolError::MissingRequiredSysvar => msg!("Missing required sysvar account"),
+            StakePoolError::InvalidSession => msg!("Error: Invalid session account provided"),
+            StakePoolError::SessionValidationFailed => msg!("Error: Session account validation failed"),
+            StakePoolError::InvalidAuthority => msg!("Error: Invalid user authority extracted from session"),
         }
     }
 }

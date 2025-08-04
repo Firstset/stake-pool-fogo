@@ -164,6 +164,17 @@ pub enum StakePoolError {
     /// Missing required sysvar account
     #[error("Missing required sysvar account")]
     MissingRequiredSysvar,
+
+    // 43.
+    /// Invalid session account provided
+    #[error("InvalidSession")]
+    InvalidSession,
+    /// Session account validation failed
+    #[error("SessionValidationFailed")]
+    SessionValidationFailed,
+    /// Invalid user authority extracted from session
+    #[error("InvalidAuthority")]
+    InvalidAuthority,
 }
 impl From<StakePoolError> for ProgramError {
     fn from(e: StakePoolError) -> Self {

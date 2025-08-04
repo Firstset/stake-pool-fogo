@@ -2,6 +2,7 @@
 
 //! A program for creating and managing pools of stake
 
+pub mod auth;
 pub mod big_vec;
 pub mod error;
 pub mod inline_mpl_token_metadata;
