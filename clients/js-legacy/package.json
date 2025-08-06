@@ -45,6 +45,7 @@
   ],
   "license": "ISC",
   "dependencies": {
+    "@fogo/sessions-sdk-react": "^0.0.12",
     "@solana/buffer-layout": "^4.0.1",
     "@solana/spl-token": "0.4.13",
     "@solana/web3.js": "^1.95.5",

@@ -5,7 +5,7 @@ For use with both node.js and in-browser.
 ## Installation
 
 ```
-npm install
+pnpm install
 ```
 
 ## Build and run
@@ -13,7 +13,7 @@ npm install
 In the `js` folder:
 
 ```
-npm run build
+pnpm run build
 ```
 
 The build is available at `dist/index.js` (or `dist.browser/index.iife.js` in the browser).

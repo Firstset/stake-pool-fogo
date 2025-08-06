@@ -9,6 +9,7 @@ import {
   SystemProgram,
   TransactionInstruction,
 } from '@solana/web3.js';
+import type { EstablishedSessionState } from "@fogo/sessions-sdk-react";
 import {
   AccountLayout,
   NATIVE_MINT,
@@ -368,13 +369,16 @@ export async function depositWsol(
   destinationTokenAccount?: PublicKey,
   referrerTokenAccount?: PublicKey,
   depositAuthority?: PublicKey,
+  sessionState?: EstablishedSessionState,
 ) {
   const stakePoolAccount = await getStakePoolAccount(connection, stakePoolAddress);
   const stakePoolProgramId = getStakePoolProgramId(connection.rpcEndpoint);
   const stakePool = stakePoolAccount.account.data;
 
   // Check wSOL balance
-  const fromWsolAccount = getAssociatedTokenAddressSync(NATIVE_MINT, from);
+  console.log('[library] sessionState: ', sessionState);
+  const userPubkey = sessionState?.walletPublicKey ?? from;
+  const fromWsolAccount = getAssociatedTokenAddressSync(NATIVE_MINT, userPubkey);
   const fromWsolBalance = await connection.getTokenAccountBalance(fromWsolAccount, 'confirmed');
   if (new BN(fromWsolBalance.value.amount).lt(new BN(lamports))) {
     throw new Error(
