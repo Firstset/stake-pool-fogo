@@ -1,11 +1,11 @@
 //! Error types
 
+use fogo_sessions_sdk::error::SessionError;
 use {
     num_derive::FromPrimitive,
     solana_program::{decode_error::DecodeError, program_error::ProgramError},
     thiserror::Error,
 };
-use fogo_sessions_sdk::error::SessionError;
 
 /// Errors that may be returned by the Stake Pool program.
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
@@ -210,10 +210,14 @@ impl From<SessionError> for StakePoolError {
             SessionError::Expired => StakePoolError::SessionExpired,
             SessionError::UserMismatch => StakePoolError::SessionUserMismatch,
             SessionError::UnauthorizedProgram => StakePoolError::SessionUnauthorizedProgram,
-            SessionError::MissingRequiredSignature => StakePoolError::SessionMissingRequiredSignature,
+            SessionError::MissingRequiredSignature => {
+                StakePoolError::SessionMissingRequiredSignature
+            }
             SessionError::ClockError => StakePoolError::SessionClockError,
             SessionError::InvalidAccountData => StakePoolError::SessionInvalidAccountData,
-            SessionError::InvalidAccountDiscriminator => StakePoolError::SessionInvalidAccountDiscriminator,
+            SessionError::InvalidAccountDiscriminator => {
+                StakePoolError::SessionInvalidAccountDiscriminator
+            }
             SessionError::InvalidAccountVersion => StakePoolError::SessionInvalidAccountVersion,
             SessionError::LimitsExceeded => StakePoolError::SessionLimitsExceeded,
             SessionError::Revoked => StakePoolError::SessionRevoked,
