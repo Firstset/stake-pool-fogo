@@ -102,7 +102,8 @@ async def rebalance(
         else "set by the reserve_percent option"
     )
     print(
-        f"* Retaining {float(retained_reserve_lamports / LAMPORTS_PER_SOL):.2f} SOLs ({retained_reserve_lamports} lamports) in the reserve ({retained_reserve_lamports_set_by})"
+        f"* Retaining {float(retained_reserve_lamports / LAMPORTS_PER_SOL):.2f} SOLs"
+        f"({retained_reserve_lamports} lamports) in the reserve ({retained_reserve_lamports_set_by})"
     )
     lamports_per_validator = (
         stake_pool.total_lamports - retained_reserve_lamports
@@ -275,7 +276,8 @@ if __name__ == "__main__":
         metavar="RESERVE_PERCENT",
         type=float,
         default=0,
-        help="Percentage of the total SOLs in the pool to keep in the reserve, e.g. 0.1 (means 10%%). Note that the bot reserves max(reserve_amount, reserve_percent * total).",
+        help="Percentage of the total SOLs in the pool to keep in the reserve, e.g. 0.1 (means 10%%). \
+            Note that the bot reserves max(reserve_amount, reserve_percent * total).",
     )
     parser.add_argument(
         "--endpoint",

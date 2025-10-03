@@ -1,27 +1,25 @@
 import asyncio
-import pytest
-import pytest_asyncio
 import os
 import shutil
 import tempfile
-from typing import AsyncIterator, List, Tuple
 from subprocess import Popen
+from typing import AsyncIterator, List, Tuple
 
-from solders.keypair import Keypair
-from solders.pubkey import Pubkey
+import pytest
+import pytest_asyncio
+from solana.exceptions import SolanaRpcException
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Confirmed
-from solana.exceptions import SolanaRpcException
-
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
 from spl.token.instructions import get_associated_token_address
-
-from vote.actions import create_vote
-from system.actions import airdrop
-from stake_pool.actions import deposit_sol, create_all, add_validator_to_pool
+from stake_pool.actions import add_validator_to_pool, create_all, deposit_sol
 from stake_pool.state import Fee
+from system.actions import airdrop
+from vote.actions import create_vote
 
 NUM_SLOTS_PER_EPOCH: int = 32
-AIRDROP_LAMPORTS: int = 30_000_000_000
+AIRDROP_LAMPORTS: int = 5_000_000_000_000
 
 
 @pytest.fixture(scope="session")
@@ -29,15 +27,21 @@ def solana_test_validator():
     old_cwd = os.getcwd()
     newpath = tempfile.mkdtemp()
     os.chdir(newpath)
-    validator = Popen([
-        "solana-test-validator",
-        "--reset", "--quiet",
-        "--bpf-program", "SPoo1Ku8WFXoNDMHPsrGSTSG1Y47rzgn41SLUNakuHy",
-        f"{old_cwd}/../../target/deploy/spl_stake_pool.so",
-        "--bpf-program", "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
-        f"{old_cwd}/../../program/tests/fixtures/mpl_token_metadata.so",
-        "--slots-per-epoch", str(NUM_SLOTS_PER_EPOCH),
-    ],)
+    validator = Popen(
+        [
+            "solana-test-validator",
+            "--reset",
+            "--quiet",
+            "--bpf-program",
+            "SPRe2ae9JQhySheYsSANX6M8tUZLt5bQonnBJ6Wu6Ud",
+            f"{old_cwd}/../../target/deploy/spl_stake_pool.so",
+            "--bpf-program",
+            "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+            f"{old_cwd}/../../program/tests/fixtures/mpl_token_metadata.so",
+            "--slots-per-epoch",
+            str(NUM_SLOTS_PER_EPOCH),
+        ],
+    )
     yield
     validator.kill()
     os.chdir(old_cwd)
@@ -51,7 +55,9 @@ async def validators(async_client, payer) -> List[Pubkey]:
     for i in range(num_validators):
         vote = Keypair()
         node = Keypair()
-        await create_vote(async_client, payer, vote, node, payer.pubkey(), payer.pubkey(), 10)
+        await create_vote(
+            async_client, payer, vote, node, payer.pubkey(), payer.pubkey(), 10
+        )
         validators.append(vote.pubkey())
     return validators
 
@@ -67,7 +73,9 @@ async def stake_pool_addresses(
     stake_pool = stake_pool_addresses[0]
     pool_mint = stake_pool_addresses[2]
     token_account = get_associated_token_address(payer.pubkey(), pool_mint)
-    await deposit_sol(async_client, payer, stake_pool, token_account, AIRDROP_LAMPORTS // 2)
+    await deposit_sol(
+        async_client, payer, stake_pool, token_account, AIRDROP_LAMPORTS // 2
+    )
     for validator in validators:
         await add_validator_to_pool(async_client, payer, stake_pool, validator)
     return stake_pool_addresses

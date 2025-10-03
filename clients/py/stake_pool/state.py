@@ -1,16 +1,27 @@
 """SPL Stake Pool State."""
 
 from enum import IntEnum
-from typing import List, NamedTuple, Optional
-from construct import Bytes, Container, Struct, Switch, Int8ul, Int32ul, Int64ul, Pass  # type: ignore
+from typing import List, NamedTuple, Optional, Sequence, Union
 
+from construct import (  # type: ignore
+    Bytes,
+    Container,
+    Int8ul,
+    Int32ul,
+    Int64ul,
+    Pass,
+    Struct,
+    Switch,
+)
 from solders.pubkey import Pubkey
-from stake.state import Lockup, LOCKUP_LAYOUT
+from stake.state import LOCKUP_LAYOUT, Lockup
 
 PUBLIC_KEY_LAYOUT = Bytes(32)
 
 
-def decode_optional_publickey(container: Container) -> Optional[Pubkey]:
+def decode_optional_publickey(
+    container: Union[bytes, Sequence[int]],
+) -> Optional[Pubkey]:
     if container:
         return Pubkey(container)
     else:
@@ -19,14 +30,15 @@ def decode_optional_publickey(container: Container) -> Optional[Pubkey]:
 
 class Fee(NamedTuple):
     """Fee assessed by the stake pool, expressed as numerator / denominator."""
+
     numerator: int
     denominator: int
 
     @classmethod
     def decode_container(cls, container: Container):
         return Fee(
-            numerator=container['numerator'],
-            denominator=container['denominator'],
+            numerator=container["numerator"],
+            denominator=container["denominator"],
         )
 
     @classmethod
@@ -39,6 +51,7 @@ class Fee(NamedTuple):
 
 class StakePool(NamedTuple):
     """Stake pool and all its data."""
+
     manager: Pubkey
     staker: Pubkey
     stake_deposit_authority: Pubkey
@@ -73,35 +86,47 @@ class StakePool(NamedTuple):
     def decode(cls, data: bytes):
         parsed = DECODE_STAKE_POOL_LAYOUT.parse(data)
         return StakePool(
-            manager=Pubkey(parsed['manager']),
-            staker=Pubkey(parsed['staker']),
-            stake_deposit_authority=Pubkey(parsed['stake_deposit_authority']),
-            stake_withdraw_bump_seed=parsed['stake_withdraw_bump_seed'],
-            validator_list=Pubkey(parsed['validator_list']),
-            reserve_stake=Pubkey(parsed['reserve_stake']),
-            pool_mint=Pubkey(parsed['pool_mint']),
-            manager_fee_account=Pubkey(parsed['manager_fee_account']),
-            token_program_id=Pubkey(parsed['token_program_id']),
-            total_lamports=parsed['total_lamports'],
-            pool_token_supply=parsed['pool_token_supply'],
-            last_update_epoch=parsed['last_update_epoch'],
-            lockup=Lockup.decode_container(parsed['lockup']),
-            epoch_fee=Fee.decode_container(parsed['epoch_fee']),
-            next_epoch_fee=Fee.decode_optional_container(parsed['next_epoch_fee']),
-            preferred_deposit_validator=decode_optional_publickey(parsed['preferred_deposit_validator']),
-            preferred_withdraw_validator=decode_optional_publickey(parsed['preferred_withdraw_validator']),
-            stake_deposit_fee=Fee.decode_container(parsed['stake_deposit_fee']),
-            stake_withdrawal_fee=Fee.decode_container(parsed['stake_withdrawal_fee']),
-            next_stake_withdrawal_fee=Fee.decode_optional_container(parsed['next_stake_withdrawal_fee']),
-            stake_referral_fee=parsed['stake_referral_fee'],
-            sol_deposit_authority=decode_optional_publickey(parsed['sol_deposit_authority']),
-            sol_deposit_fee=Fee.decode_container(parsed['sol_deposit_fee']),
-            sol_referral_fee=parsed['sol_referral_fee'],
-            sol_withdraw_authority=decode_optional_publickey(parsed['sol_withdraw_authority']),
-            sol_withdrawal_fee=Fee.decode_container(parsed['sol_withdrawal_fee']),
-            next_sol_withdrawal_fee=Fee.decode_optional_container(parsed['next_sol_withdrawal_fee']),
-            last_epoch_pool_token_supply=parsed['last_epoch_pool_token_supply'],
-            last_epoch_total_lamports=parsed['last_epoch_total_lamports'],
+            manager=Pubkey(parsed["manager"]),
+            staker=Pubkey(parsed["staker"]),
+            stake_deposit_authority=Pubkey(parsed["stake_deposit_authority"]),
+            stake_withdraw_bump_seed=parsed["stake_withdraw_bump_seed"],
+            validator_list=Pubkey(parsed["validator_list"]),
+            reserve_stake=Pubkey(parsed["reserve_stake"]),
+            pool_mint=Pubkey(parsed["pool_mint"]),
+            manager_fee_account=Pubkey(parsed["manager_fee_account"]),
+            token_program_id=Pubkey(parsed["token_program_id"]),
+            total_lamports=parsed["total_lamports"],
+            pool_token_supply=parsed["pool_token_supply"],
+            last_update_epoch=parsed["last_update_epoch"],
+            lockup=Lockup.decode_container(parsed["lockup"]),
+            epoch_fee=Fee.decode_container(parsed["epoch_fee"]),
+            next_epoch_fee=Fee.decode_optional_container(parsed["next_epoch_fee"]),
+            preferred_deposit_validator=decode_optional_publickey(
+                parsed["preferred_deposit_validator"]
+            ),
+            preferred_withdraw_validator=decode_optional_publickey(
+                parsed["preferred_withdraw_validator"]
+            ),
+            stake_deposit_fee=Fee.decode_container(parsed["stake_deposit_fee"]),
+            stake_withdrawal_fee=Fee.decode_container(parsed["stake_withdrawal_fee"]),
+            next_stake_withdrawal_fee=Fee.decode_optional_container(
+                parsed["next_stake_withdrawal_fee"]
+            ),
+            stake_referral_fee=parsed["stake_referral_fee"],
+            sol_deposit_authority=decode_optional_publickey(
+                parsed["sol_deposit_authority"]
+            ),
+            sol_deposit_fee=Fee.decode_container(parsed["sol_deposit_fee"]),
+            sol_referral_fee=parsed["sol_referral_fee"],
+            sol_withdraw_authority=decode_optional_publickey(
+                parsed["sol_withdraw_authority"]
+            ),
+            sol_withdrawal_fee=Fee.decode_container(parsed["sol_withdrawal_fee"]),
+            next_sol_withdrawal_fee=Fee.decode_optional_container(
+                parsed["next_sol_withdrawal_fee"]
+            ),
+            last_epoch_pool_token_supply=parsed["last_epoch_pool_token_supply"],
+            last_epoch_total_lamports=parsed["last_epoch_total_lamports"],
         )
 
 
@@ -148,14 +173,14 @@ class ValidatorStakeInfo(NamedTuple):
     @classmethod
     def decode_container(cls, container: Container):
         return ValidatorStakeInfo(
-            active_stake_lamports=container['active_stake_lamports'],
-            transient_stake_lamports=container['transient_stake_lamports'],
-            last_update_epoch=container['last_update_epoch'],
-            transient_seed_suffix=container['transient_seed_suffix'],
-            unused=container['unused'],
-            validator_seed_suffix=container['validator_seed_suffix'],
-            status=container['status'],
-            vote_account_address=Pubkey(container['vote_account_address']),
+            active_stake_lamports=container["active_stake_lamports"],
+            transient_stake_lamports=container["transient_stake_lamports"],
+            last_update_epoch=container["last_update_epoch"],
+            transient_seed_suffix=container["transient_seed_suffix"],
+            unused=container["unused"],
+            validator_seed_suffix=container["validator_seed_suffix"],
+            status=container["status"],
+            vote_account_address=Pubkey(container["vote_account_address"]),
         )
 
 
@@ -177,8 +202,11 @@ class ValidatorList(NamedTuple):
     def decode(cls, data: bytes):
         parsed = DECODE_VALIDATOR_LIST_LAYOUT.parse(data)
         return ValidatorList(
-            max_validators=parsed['max_validators'],
-            validators=[ValidatorStakeInfo.decode_container(container) for container in parsed['validators']],
+            max_validators=parsed["max_validators"],
+            validators=[
+                ValidatorStakeInfo.decode_container(container)
+                for container in parsed["validators"]
+            ],
         )
 
 
@@ -244,60 +272,74 @@ DECODE_STAKE_POOL_LAYOUT = Struct(
     "lockup" / LOCKUP_LAYOUT,
     "epoch_fee" / FEE_LAYOUT,
     "next_epoch_fee_option" / Int8ul,
-    "next_epoch_fee" / Switch(
+    "next_epoch_fee"
+    / Switch(
         lambda this: this.next_epoch_fee_option,
         {
             0: Pass,
             1: FEE_LAYOUT,
-        }),
+        },
+    ),
     "preferred_deposit_validator_option" / Int8ul,
-    "preferred_deposit_validator" / Switch(
+    "preferred_deposit_validator"
+    / Switch(
         lambda this: this.preferred_deposit_validator_option,
         {
             0: Pass,
             1: PUBLIC_KEY_LAYOUT,
-        }),
+        },
+    ),
     "preferred_withdraw_validator_option" / Int8ul,
-    "preferred_withdraw_validator" / Switch(
+    "preferred_withdraw_validator"
+    / Switch(
         lambda this: this.preferred_withdraw_validator_option,
         {
             0: Pass,
             1: PUBLIC_KEY_LAYOUT,
-        }),
+        },
+    ),
     "stake_deposit_fee" / FEE_LAYOUT,
     "stake_withdrawal_fee" / FEE_LAYOUT,
     "next_stake_withdrawal_fee_option" / Int8ul,
-    "next_stake_withdrawal_fee" / Switch(
+    "next_stake_withdrawal_fee"
+    / Switch(
         lambda this: this.next_stake_withdrawal_fee_option,
         {
             0: Pass,
             1: FEE_LAYOUT,
-        }),
+        },
+    ),
     "stake_referral_fee" / Int8ul,
     "sol_deposit_authority_option" / Int8ul,
-    "sol_deposit_authority" / Switch(
+    "sol_deposit_authority"
+    / Switch(
         lambda this: this.sol_deposit_authority_option,
         {
             0: Pass,
             1: PUBLIC_KEY_LAYOUT,
-        }),
+        },
+    ),
     "sol_deposit_fee" / FEE_LAYOUT,
     "sol_referral_fee" / Int8ul,
     "sol_withdraw_authority_option" / Int8ul,
-    "sol_withdraw_authority" / Switch(
+    "sol_withdraw_authority"
+    / Switch(
         lambda this: this.sol_withdraw_authority_option,
         {
             0: Pass,
             1: PUBLIC_KEY_LAYOUT,
-        }),
+        },
+    ),
     "sol_withdrawal_fee" / FEE_LAYOUT,
     "next_sol_withdrawal_fee_option" / Int8ul,
-    "next_sol_withdrawal_fee" / Switch(
+    "next_sol_withdrawal_fee"
+    / Switch(
         lambda this: this.next_sol_withdrawal_fee_option,
         {
             0: Pass,
             1: FEE_LAYOUT,
-        }),
+        },
+    ),
     "last_epoch_pool_token_supply" / Int64ul,
     "last_epoch_total_lamports" / Int64ul,
 )
