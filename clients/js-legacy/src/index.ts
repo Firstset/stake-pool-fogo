@@ -12,10 +12,12 @@ import {
 import {
   createApproveInstruction,
   createAssociatedTokenAccountIdempotentInstruction,
+  createSetAuthorityInstruction,
   getAccount,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
+  AuthorityType,
 } from '@solana/spl-token';
 import {
   ValidatorAccount,
@@ -415,6 +417,19 @@ export async function depositWsolWithSession(
       ),
     );
     destinationTokenAccount = associatedAddress;
+
+    // If we're sponsoring the ATA, immediately flip its CloseAuthority to the paymaster
+    // so users cannot close it and farm the rent lamports.
+    if (paymaster) {
+      instructions.push(
+        createSetAuthorityInstruction(
+          destinationTokenAccount,   // token account (ATA) whose close authority we set
+          userWallet,                // current close authority is the owner (the user)
+          AuthorityType.CloseAccount,
+          paymaster,                 // new close authority = paymaster
+        ),
+      );
+    }
   }
 
   const withdrawAuthority = await findWithdrawAuthorityProgramAddress(
