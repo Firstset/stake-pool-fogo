@@ -249,4 +249,4 @@ jobs:
           solana program deploy "$PROGRAM_SO" \
             --program-id "$PROGRAM_ID_KEYPAIR" \
             --url "$FOGO_TESTNET_RPC" \
-            --keypair "$FEE_PAYER_KEYPAIR"
+            --fee-payer "$FEE_PAYER_KEYPAIR"
