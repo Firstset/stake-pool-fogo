@@ -225,7 +225,8 @@ jobs:
       - name: Update devnet program
         env:
           FOGO_TESTNET_RPC: ${{ vars.FOGO_TESTNET_RPC }}
-          FOGO_DEVNET_DEPLOYMENT_KEYPAIR: ${{ secrets.FOGO_DEVNET_DEPLOYMENT_KEYPAIR }}
+          FOGO_DEVNET_PROGRAM_ID_KEYPAIR: ${{ secrets.FOGO_DEVNET_PROGRAM_ID_KEYPAIR }}
+          FOGO_DEVNET_FEE_PAYER_KEYPAIR: ${{ secrets.FOGO_DEVNET_FEE_PAYER_KEYPAIR }}
         run: |
           set -euo pipefail
 
@@ -236,12 +237,16 @@ jobs:
           fi
 
           umask 177
-          DEPLOY_KEYPAIR_FILE="$(mktemp)"
-          trap 'rm -f "$DEPLOY_KEYPAIR_FILE"' EXIT
+          PROGRAM_ID_KEYPAIR="$(mktemp)"
+          trap 'rm -f "$PROGRAM_ID_KEYPAIR"' EXIT
 
-          printf '%s' "$FOGO_DEVNET_DEPLOYMENT_KEYPAIR" > "$DEPLOY_KEYPAIR_FILE"
+          FEE_PAYER_KEYPAIR="$(mktemp)"
+          trap 'rm -f "$FEE_PAYER_KEYPAIR"' EXIT
+
+          printf '%s' "$FOGO_DEVNET_DEPLOYMENT_KEYPAIR" > "$PROGRAM_ID_KEYPAIR"
+          printf '%s' "$FOGO_DEVNET_FEE_PAYER_KEYPAIR" > "$FEE_PAYER_KEYPAIR"
 
           solana program deploy "$PROGRAM_SO" \
-            --program-id "$DEPLOY_KEYPAIR_FILE" \
+            --program-id "$PROGRAM_ID_KEYPAIR" \
             --url "$FOGO_TESTNET_RPC" \
-            --keypair "$DEPLOY_KEYPAIR_FILE"
+            --keypair "$FEE_PAYER_KEYPAIR"
