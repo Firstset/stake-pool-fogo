@@ -424,7 +424,7 @@ export async function depositWsolWithSession(
       instructions.push(
         createSetAuthorityInstruction(
           destinationTokenAccount,   // token account (ATA) whose close authority we set
-          userWallet,                // current close authority is the owner (the user)
+          signerOrSession,                // current close authority is the owner (the user)
           AuthorityType.CloseAccount,
           paymaster,                 // new close authority = paymaster
         ),
@@ -504,35 +504,40 @@ export async function withdrawWsolWithSession(
   const instructions: TransactionInstruction[] = [];
   const signers: Signer[] = [];
 
-  // Create WSOL ATA if it doesn't exist
-  instructions.push(
-    createAssociatedTokenAccountIdempotentInstruction(
-      paymaster ?? signerOrSession, // Payer (could be session or user)
-      userWsolAccount,
-      userWallet, // Owner is always the actual user
-      NATIVE_MINT,
-    ),
-  );
+  // Only set CloseAuthority if we are also creating the ATA now.
+  let creatingWsolAtaNow = false;
+  try {
+    // Will throw if the account doesn't exist
+    await getAccount(connection, userWsolAccount, "confirmed", TOKEN_PROGRAM_ID);
+    // exists: do nothing (we don't touch CloseAuthority)
+  } catch {
+    // doesn't exist: create it (payer = paymaster if provided), then set CloseAuthority -> paymaster
+    creatingWsolAtaNow = true;
+    instructions.push(
+      createAssociatedTokenAccountIdempotentInstruction(
+        paymaster ?? signerOrSession, // who pays rent
+        userWsolAccount,
+        userWallet, // owner remains the actual user
+        NATIVE_MINT,
+      ),
+    );
+    if (paymaster) {
+      instructions.push(
+        createSetAuthorityInstruction(
+          userWsolAccount,               // the new ATA
+          userWallet,                    // current close authority (owner = user)
+          AuthorityType.CloseAccount,
+          paymaster,                     // new close authority = paymaster
+        ),
+      );
+    }
+  }
 
   // Derive the program signer PDA
   const [programSigner] = PublicKey.findProgramAddressSync(
     [Buffer.from('fogo_session_program_signer')], // PROGRAM_SIGNER_SEED: https://github.com/fogo-foundation/fogo-sessions/blob/8b00bdfb214c0f797d8dd22fc24f813801a8a191/packages/sessions-sdk-rs/src/token/mod.rs#L5
     stakePoolProgramId,
   );
-
-  // // Create ephemeral transfer authority for spending pool tokens
-  // const userTransferAuthority = Keypair.generate();
-  // signers.push(userTransferAuthority);
-
-  // // Approve spending pool tokens
-  // instructions.push(
-  //   createApproveInstruction(
-  //     poolTokenAccount,
-  //     userTransferAuthority.publicKey,
-  //     userWallet, // The actual user needs to approve
-  //     poolTokensLamports,
-  //   ),
-  // );
 
   const withdrawAuthority = await findWithdrawAuthorityProgramAddress(
     stakePoolProgramId,
