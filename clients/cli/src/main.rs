@@ -12,9 +12,7 @@ use {
         crate_description, crate_name, crate_version, value_t, value_t_or_exit, App, AppSettings,
         Arg, ArgGroup, ArgMatches, SubCommand,
     },
-    fogo_sessions_sdk::{
-        token::PROGRAM_SIGNER_SEED,
-    },
+    fogo_sessions_sdk::token::PROGRAM_SIGNER_SEED,
     solana_clap_utils::{
         compute_unit_price::{compute_unit_price_arg, COMPUTE_UNIT_PRICE_ARG},
         input_parsers::{keypair_of, pubkey_of},
@@ -32,8 +30,7 @@ use {
         instruction::Instruction,
         program_pack::Pack,
         pubkey::Pubkey,
-        stake,
-        system_program,
+        stake, system_program,
     },
     solana_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_sdk::{
@@ -1405,11 +1402,10 @@ fn command_deposit_sol(
     Ok(())
 }
 
-
 fn command_deposit_wsol_with_session(
     config: &Config,
     stake_pool_address: &Pubkey,
-    from: &Option<Keypair>,  // The session account or user's keypair
+    from: &Option<Keypair>, // The session account or user's keypair
     pool_token_receiver_account: &Option<Pubkey>,
     referrer_token_account: &Option<Pubkey>,
     amount: f64,
@@ -1417,8 +1413,14 @@ fn command_deposit_wsol_with_session(
     println!("[DEBUG] Entering command_deposit_wsol_with_session");
     println!("[DEBUG] stake_pool_address: {:?}", stake_pool_address);
     println!("[DEBUG] from: {:?}", from.as_ref().map(|k| k.pubkey()));
-    println!("[DEBUG] pool_token_receiver_account: {:?}", pool_token_receiver_account);
-    println!("[DEBUG] referrer_token_account: {:?}", referrer_token_account);
+    println!(
+        "[DEBUG] pool_token_receiver_account: {:?}",
+        pool_token_receiver_account
+    );
+    println!(
+        "[DEBUG] referrer_token_account: {:?}",
+        referrer_token_account
+    );
     println!("[DEBUG] amount: {}", amount);
 
     if !config.no_update {
@@ -1494,15 +1496,24 @@ fn command_deposit_wsol_with_session(
             &mut instructions,
             &mut total_rent_free_balances,
         ));
-    println!("[DEBUG] pool_token_receiver_account: {:?}", pool_token_receiver_account);
+    println!(
+        "[DEBUG] pool_token_receiver_account: {:?}",
+        pool_token_receiver_account
+    );
 
     let referrer_token_account = referrer_token_account.unwrap_or(pool_token_receiver_account);
-    println!("[DEBUG] referrer_token_account: {:?}", referrer_token_account);
+    println!(
+        "[DEBUG] referrer_token_account: {:?}",
+        referrer_token_account
+    );
 
     let pool_withdraw_authority =
         find_withdraw_authority_program_address(&config.stake_pool_program_id, stake_pool_address)
             .0;
-    println!("[DEBUG] pool_withdraw_authority: {:?}", pool_withdraw_authority);
+    println!(
+        "[DEBUG] pool_withdraw_authority: {:?}",
+        pool_withdraw_authority
+    );
 
     // Build the deposit_wsol_with_session instruction
     let deposit_instruction = if let Some(deposit_authority) = config.funding_authority.as_ref() {
@@ -1523,11 +1534,11 @@ fn command_deposit_wsol_with_session(
         // Note: You'll need to add this instruction builder to the spl_stake_pool crate
         spl_stake_pool::instruction::deposit_wsol_with_session(
             &config.stake_pool_program_id,
-            &user_pubkey,              // signer_or_session
-            &user_pubkey,              // fee_payer  
-            &program_signer,             // program_signer PDA
-            &user_wsol_account,          // user's WSOL ATA
-            &transient_wsol_pda,         // transient WSOL PDA
+            &user_pubkey,                  // signer_or_session
+            &user_pubkey,                  // fee_payer
+            &program_signer,               // program_signer PDA
+            &user_wsol_account,            // user's WSOL ATA
+            &transient_wsol_pda,           // transient WSOL PDA
             &spl_token::native_mint::id(), // WSOL mint
             stake_pool_address,
             &pool_withdraw_authority,
@@ -1545,15 +1556,15 @@ fn command_deposit_wsol_with_session(
         println!("[DEBUG] Not using deposit authority");
         spl_stake_pool::instruction::deposit_wsol_with_session(
             &config.stake_pool_program_id,
-            &user_pubkey,              // signer_or_session
-            &user_pubkey,              // fee_payer
-            &program_signer,             // program_signer PDA
-            &user_wsol_account,          // user's WSOL ATA
-            &transient_wsol_pda,         // transient WSOL PDA
+            &user_pubkey,                  // signer_or_session
+            &user_pubkey,                  // fee_payer
+            &program_signer,               // program_signer PDA
+            &user_wsol_account,            // user's WSOL ATA
+            &transient_wsol_pda,           // transient WSOL PDA
             &spl_token::native_mint::id(), // WSOL mint
             stake_pool_address,
             &pool_withdraw_authority,
-            None,                       // no sol_deposit_authority
+            None, // no sol_deposit_authority
             &stake_pool.reserve_stake,
             &pool_token_receiver_account,
             &stake_pool.manager_fee_account,
@@ -1568,7 +1579,10 @@ fn command_deposit_wsol_with_session(
 
     instructions.push(deposit_instruction);
 
-    println!("[DEBUG] signers: {:?}", signers.iter().map(|s| s.pubkey()).collect::<Vec<_>>());
+    println!(
+        "[DEBUG] signers: {:?}",
+        signers.iter().map(|s| s.pubkey()).collect::<Vec<_>>()
+    );
     unique_signers!(signers);
     let transaction = checked_transaction_with_signers_and_additional_fee(
         config,
@@ -1662,9 +1676,10 @@ fn command_withdraw_wsol_with_session(
 
     // Build the withdraw_wsol_with_session instruction
     let withdraw_instruction = if let Some(withdraw_authority) = config.funding_authority.as_ref() {
-        let expected_sol_withdraw_authority = stake_pool.sol_withdraw_authority.ok_or_else(|| {
-            "SOL withdraw authority specified in arguments but stake pool has none".to_string()
-        })?;
+        let expected_sol_withdraw_authority =
+            stake_pool.sol_withdraw_authority.ok_or_else(|| {
+                "SOL withdraw authority specified in arguments but stake pool has none".to_string()
+            })?;
         signers.push(withdraw_authority.as_ref());
         if withdraw_authority.pubkey() != expected_sol_withdraw_authority {
             let error = format!(
@@ -3823,14 +3838,27 @@ fn main() {
             let stake_pool_address = pubkey_of(arg_matches, "pool").unwrap();
             let from = keypair_of(arg_matches, "from");
             let amount = value_t_or_exit!(arg_matches, "amount", f64);
-            command_deposit_wsol_with_session(&config, &stake_pool_address, &from, &None, &None, amount)
+            command_deposit_wsol_with_session(
+                &config,
+                &stake_pool_address,
+                &from,
+                &None,
+                &None,
+                amount,
+            )
         }
         ("withdraw-wsol-with-session", Some(arg_matches)) => {
             let stake_pool_address = pubkey_of(arg_matches, "pool").unwrap();
             let from = keypair_of(arg_matches, "from");
             let pool_account = pubkey_of(arg_matches, "pool_account");
             let amount = value_t_or_exit!(arg_matches, "amount", f64);
-            command_withdraw_wsol_with_session(&config, &stake_pool_address, &from, &pool_account, amount)
+            command_withdraw_wsol_with_session(
+                &config,
+                &stake_pool_address,
+                &from,
+                &pool_account,
+                amount,
+            )
         }
         ("list", Some(arg_matches)) => {
             let stake_pool_address = pubkey_of(arg_matches, "pool").unwrap();

@@ -2271,21 +2271,22 @@ pub fn deposit_wsol_with_session(
 ) -> Instruction {
     let mut accounts = vec![
         /* --- Core deposit SOL accounts (match DepositSol order) ----------- */
-        /* 0  */ AccountMeta::new(*stake_pool,                   false),
+        /* 0  */
+        AccountMeta::new(*stake_pool, false),
         /* 1  */ AccountMeta::new_readonly(*stake_pool_withdraw_authority, false),
-        /* 2  */ AccountMeta::new(*reserve_stake_account,        false),
-        /* 3  */ AccountMeta::new(*pool_tokens_to,      false),
-        /* 4  */ AccountMeta::new(*manager_fee_account,          false),
+        /* 2  */ AccountMeta::new(*reserve_stake_account, false),
+        /* 3  */ AccountMeta::new(*pool_tokens_to, false),
+        /* 4  */ AccountMeta::new(*manager_fee_account, false),
         /* 5  */ AccountMeta::new(*referrer_pool_tokens_account, false),
-        /* 6  */ AccountMeta::new(*pool_mint,                    false),
-        /* 7  */ AccountMeta::new_readonly(*system_program_id,   false),
-        /* 8  */ AccountMeta::new_readonly(*token_program_id,    false),
-
+        /* 6  */ AccountMeta::new(*pool_mint, false),
+        /* 7  */ AccountMeta::new_readonly(*system_program_id, false),
+        /* 8  */ AccountMeta::new_readonly(*token_program_id, false),
         /* --- Extra accounts for WSOL ATA creation / validation ------------ */
-        /* 9  */ AccountMeta::new(*signer_or_session, /*is_signer*/ true),
+        /* 9  */
+        AccountMeta::new(*signer_or_session, /*is_signer*/ true),
         /* 10 */ AccountMeta::new_readonly(*wsol_mint, false),
         /* 11 */ AccountMeta::new(*fee_payer, /*is_signer*/ true),
-        /* 12 */ AccountMeta::new(*user_wsol_account,  false),
+        /* 12 */ AccountMeta::new(*user_wsol_account, false),
         /* 13 */ AccountMeta::new(*transient_wsol_account, false),
         /* 14 */ AccountMeta::new(*program_signer, false),
     ];
@@ -2297,10 +2298,12 @@ pub fn deposit_wsol_with_session(
     Instruction {
         program_id: *program_id,
         accounts,
-        data: borsh::to_vec(&StakePoolInstruction::DepositWsolWithSession { lamports: lamports_in }).unwrap(),
+        data: borsh::to_vec(&StakePoolInstruction::DepositWsolWithSession {
+            lamports: lamports_in,
+        })
+        .unwrap(),
     }
 }
-
 
 fn withdraw_stake_internal(
     program_id: &Pubkey,
