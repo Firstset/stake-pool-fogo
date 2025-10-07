@@ -404,32 +404,35 @@ export async function depositWsolWithSession(
 
   // Create destination token account if not specified
   if (!destinationTokenAccount) {
-    const associatedAddress = getAssociatedTokenAddressSync(
-      stakePool.poolMint,
-      userWallet, // Pool tokens go to the actual user, not the session
-    );
-    instructions.push(
-      createAssociatedTokenAccountIdempotentInstruction(
-        paymaster ?? signerOrSession, // Payer (could be session or user)
-        associatedAddress,
-        userWallet, // Owner is always the actual user
-        stakePool.poolMint,
-      ),
-    );
-    destinationTokenAccount = associatedAddress;
+    const canonicalPoolAta = getAssociatedTokenAddressSync(stakePool.poolMint, userWallet);
+    // Check if ATA exists on-chain
+    const ataInfo = await connection.getAccountInfo(canonicalPoolAta, 'confirmed');
+    destinationTokenAccount = canonicalPoolAta;
 
-    // If we're sponsoring the ATA, immediately flip its CloseAuthority to the paymaster
-    // so users cannot close it and farm the rent lamports.
-    if (paymaster) {
+    if (!ataInfo) {
+      // Only create when missing
       instructions.push(
-        createSetAuthorityInstruction(
-          destinationTokenAccount,   // token account (ATA) whose close authority we set
-          signerOrSession,                // current close authority is the owner (the user)
-          AuthorityType.CloseAccount,
-          paymaster,                 // new close authority = paymaster
+        createAssociatedTokenAccountIdempotentInstruction(
+          paymaster ?? signerOrSession, // rent payer (paymaster or user/session)
+          canonicalPoolAta,
+          userWallet,                   // owner is always the actual user
+          stakePool.poolMint,
         ),
       );
+
+      // Only flip CloseAuthority when we just created AND a paymaster is sponsoring
+      if (paymaster) {
+        instructions.push(
+          createSetAuthorityInstruction(
+            canonicalPoolAta,          // newly created ATA
+            signerOrSession,           // current close authority (owner) via Session
+            AuthorityType.CloseAccount,
+            paymaster,                 // new close authority = paymaster
+          ),
+        );
+      }
     }
+    // If ATA existed, do nothing: no create, no authority change.
   }
 
   const withdrawAuthority = await findWithdrawAuthorityProgramAddress(
