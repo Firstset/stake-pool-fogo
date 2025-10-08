@@ -85,7 +85,7 @@ export interface StakePoolAccounts {
 export function getStakePoolProgramId(rpcEndpoint: string): PublicKey {
   if (rpcEndpoint.includes('devnet')) {
     return DEVNET_STAKE_POOL_PROGRAM_ID;
-  } else if (rpcEndpoint.includes('testnet.fogo.io?dev')) {
+  } else if (rpcEndpoint.includes('firstset')) {
     return FOGO_DEVNET_STAKE_POOL_PROGRAM_ID;
   } else if (rpcEndpoint.includes('testnet.fogo')) {
     return FOGO_TESTNET_STAKE_POOL_PROGRAM_ID;
