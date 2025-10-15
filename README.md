@@ -30,9 +30,11 @@ cd clients/js-legacy
 pnpm run build
 ```
 
-For local development, you need to import it as a dependency like this: `"@solana/spl-stake-pool": "file:../stake-pool-v2/clients/js-legacy",`
+For local development, you need to import it as a dependency like this: `"@firstset/spl-stake-pool": "file:../fogo-stake-pool/clients/js-legacy",`
 
 ## CLI
+
+On testnet, to test withdrawals and deposits:
 
 ```
 cd clients/cli
