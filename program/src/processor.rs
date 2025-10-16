@@ -2685,12 +2685,12 @@ impl Processor {
 
         // This helper creates the account or tops it up with enough rent-exempt lamports when needed if it exists already.
         create_pda_account(
-            &fee_payer_info,                // payer (wallet or session key)
+            fee_payer_info,                 // payer (wallet or session key)
             &rent,                          // rent-exempt lamports
             spl_token::state::Account::LEN, // space for a token account
-            &token_program_info.key,        // OWNER **must** be SPL-Token!
-            &system_program_info,
-            &transient_wsol_info, // new account address (PDA)
+            token_program_info.key,         // OWNER **must** be SPL-Token!
+            system_program_info,
+            transient_wsol_info, // new account address (PDA)
             transient_seeds,
         )?;
 
