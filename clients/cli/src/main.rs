@@ -30,7 +30,6 @@ use {
         instruction::Instruction,
         program_pack::Pack,
         pubkey::Pubkey,
-        system_program,
     },
     solana_remote_wallet::remote_wallet::RemoteWalletManager,
     solana_sdk::{
@@ -45,6 +44,7 @@ use {
     },
     solana_stake_interface as stake,
     solana_system_interface::instruction as system_instruction,
+    solana_system_interface::program as system_program,
     spl_associated_token_account::instruction::create_associated_token_account,
     spl_associated_token_account_client::address::get_associated_token_address_with_program_id,
     spl_stake_pool::{
@@ -1425,7 +1425,8 @@ fn command_deposit_wsol_with_session(
         command_update(config, stake_pool_address, false, false, false)?;
     }
 
-    let amount = native_token::sol_to_lamports(amount);
+    let amount =
+        native_token::sol_str_to_lamports(&amount.to_string()).ok_or("Invalid SOL amount")?;
     println!("[DEBUG] amount in lamports: {}", amount);
 
     // The signer could be either a session account or the actual user
