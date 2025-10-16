@@ -41,10 +41,10 @@ use {
         rent::Rent,
         sysvar::Sysvar,
     },
-    spl_associated_token_account::get_associated_token_address,
-    spl_token::{instruction as token_ix, native_mint},
     solana_stake_interface as stake,
     solana_system_interface::{instruction as system_instruction, program as system_program},
+    spl_associated_token_account::get_associated_token_address,
+    spl_token::{instruction as token_ix, native_mint},
     spl_token_2022::{
         check_spl_token_program_account,
         extension::{BaseStateWithExtensions, StateWithExtensions},
