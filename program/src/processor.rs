@@ -41,7 +41,9 @@ use {
         stake, system_instruction, system_program,
         sysvar::Sysvar,
     },
-    spl_associated_token_account::{get_associated_token_address, tools::account::create_pda_account},
+    spl_associated_token_account::{
+        get_associated_token_address, tools::account::create_pda_account,
+    },
     spl_token::{instruction as token_ix, native_mint},
     spl_token_2022::{
         check_spl_token_program_account,
@@ -2680,15 +2682,15 @@ impl Processor {
 
         // Create a temporary WSOL account for the session
         let rent = Rent::get()?;
-        
+
         // This helper creates the account or tops it up with enough rent-exempt lamports when needed if it exists already.
         create_pda_account(
-            &fee_payer_info,                    // payer (wallet or session key)
-            &rent,                         // rent-exempt lamports
+            &fee_payer_info,                // payer (wallet or session key)
+            &rent,                          // rent-exempt lamports
             spl_token::state::Account::LEN, // space for a token account
-            &token_program_info.key,                // OWNER **must** be SPL-Token!
+            &token_program_info.key,        // OWNER **must** be SPL-Token!
             &system_program_info,
-            &transient_wsol_info,               // new account address (PDA)
+            &transient_wsol_info, // new account address (PDA)
             transient_seeds,
         )?;
 
