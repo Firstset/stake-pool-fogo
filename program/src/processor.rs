@@ -43,7 +43,9 @@ use {
     },
     solana_stake_interface as stake,
     solana_system_interface::{instruction as system_instruction, program as system_program},
-    spl_associated_token_account::get_associated_token_address,
+    spl_associated_token_account::{
+        get_associated_token_address, tools::account::create_pda_account,
+    },
     spl_token::{instruction as token_ix, native_mint},
     spl_token_2022::{
         check_spl_token_program_account,
@@ -2759,13 +2761,6 @@ impl Processor {
         // 2. Create and initialize a temporary WSOL account controlled by the program
         // ──────────────────────────────────────────────────────────────────────
 
-        // PDA must not exist yet
-        // This is safe because we always close it later on, and it is not created anywhere else
-        if !transient_wsol_info.data_is_empty() {
-            msg!("transient_wsol PDA already exists; must be fresh each call");
-            return Err(ProgramError::InvalidAccountData);
-        }
-
         // ──────────────────────────────────────────────────────────────────────
         // a) Create the account – owner = SPL Token program
         // ──────────────────────────────────────────────────────────────────────
@@ -2781,31 +2776,21 @@ impl Processor {
             return Err(ProgramError::InvalidSeeds);
         }
 
-        // Create a temporary WSOL account for the session
-        let rent = Rent::get()?;
-        let rent_lamports = rent.minimum_balance(spl_token::state::Account::LEN);
-        let create_ix = solana_program::system_instruction::create_account(
-            fee_payer_info.key,                    // payer (wallet or session key)
-            transient_wsol_info.key,               // new account address (PDA)
-            rent_lamports,                         // rent-exempt lamports
-            spl_token::state::Account::LEN as u64, // space for a token account
-            token_program_info.key,                // OWNER **must** be SPL-Token!
-        );
-
         let transient_seeds: &[&[u8]] =
             &[b"transient_wsol", user_pubkey.as_ref(), &[transient_bump]];
 
-        // The *payer* (`signer_or_session_info`) already signed the outer tx,
-        // but the NEW account (a PDA) must also appear as a signer – therefore
-        // we invoke with `invoke_signed` and pass `transient_seeds`.
-        invoke_signed(
-            &create_ix,
-            &[
-                fee_payer_info.clone(),      // payer
-                transient_wsol_info.clone(), // new account
-                system_program_info.clone(),
-            ],
-            &[transient_seeds],
+        // Create a temporary WSOL account for the session
+        let rent = Rent::get()?;
+
+        // This helper creates the account or tops it up with enough rent-exempt lamports when needed if it exists already.
+        create_pda_account(
+            fee_payer_info,                 // payer (wallet or session key)
+            &rent,                          // rent-exempt lamports
+            spl_token::state::Account::LEN, // space for a token account
+            token_program_info.key,         // OWNER **must** be SPL-Token!
+            system_program_info,
+            transient_wsol_info, // new account address (PDA)
+            transient_seeds,
         )?;
 
         // ──────────────────────────────────────────────────────────────────────
@@ -2900,6 +2885,9 @@ impl Processor {
         // ──────────────────────────────────────────────────────────────────────
         // 5. Refund rent
         // ──────────────────────────────────────────────────────────────────────
+
+        // We assume the paymaster is always covering the full cost of the transient ATA creation.
+        let rent_lamports = rent.minimum_balance(spl_token::state::Account::LEN);
 
         let refund_ix = solana_program::system_instruction::transfer(
             program_signer_info.key,
