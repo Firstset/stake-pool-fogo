@@ -42,7 +42,7 @@ pub const MINIMUM_RESERVE_LAMPORTS: u64 = 0;
 
 /// Maximum amount of validator stake accounts to update per
 /// `UpdateValidatorListBalance` instruction, based on compute limits
-pub const MAX_VALIDATORS_TO_UPDATE: usize = 5;
+pub const MAX_VALIDATORS_TO_UPDATE: usize = 4;
 
 /// Maximum factor by which a withdrawal fee can be increased per epoch
 /// protecting stakers from malicious users.
@@ -60,6 +60,10 @@ pub const WITHDRAWAL_BASELINE_FEE: Fee = Fee {
 /// The maximum number of transient stake accounts respecting
 /// transaction account limits.
 pub const MAX_TRANSIENT_STAKE_ACCOUNTS: usize = 10;
+
+/// The maximum number of validators that can be supported in a pool in order
+/// for stake withdrawals to still work
+pub const MAX_VALIDATORS_IN_POOL: u32 = 20_000;
 
 /// Get the stake amount under consideration when calculating pool token
 /// conversions

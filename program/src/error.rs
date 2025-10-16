@@ -165,6 +165,12 @@ pub enum StakePoolError {
     /// Missing required sysvar account
     #[error("Missing required sysvar account")]
     MissingRequiredSysvar,
+    /// Epoch reward distribution is currently in progress, stakes are still being updated
+    #[error("Epoch reward distribution is currently in progress, stakes are still being updated")]
+    EpochRewardDistributionInProgress,
+    /// The stake pool has too many validators in the pool
+    #[error("The stake pool has too many validators in the pool")]
+    TooManyValidatorsInPool,
 
     // 45. Session-related errors
     /// The session has expired
