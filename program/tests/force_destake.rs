@@ -6,14 +6,7 @@ mod helpers;
 use {
     helpers::*,
     solana_program::{
-        borsh1::try_from_slice_unchecked,
-        instruction::InstructionError,
-        pubkey::Pubkey,
-        stake::{
-            self,
-            stake_flags::StakeFlags,
-            state::{Authorized, Delegation, Lockup, Meta, Stake, StakeStateV2},
-        },
+        borsh1::try_from_slice_unchecked, instruction::InstructionError, pubkey::Pubkey,
     },
     solana_program_test::*,
     solana_sdk::{
@@ -21,6 +14,11 @@ use {
         clock::Epoch,
         signature::Signer,
         transaction::TransactionError,
+    },
+    solana_stake_interface::{
+        program,
+        stake_flags::StakeFlags,
+        state::{Authorized, Delegation, Lockup, Meta, Stake, StakeStateV2},
     },
     spl_stake_pool::{
         error::StakePoolError,
@@ -48,7 +46,7 @@ async fn setup(
     let stake_account = Account::create(
         TEST_STAKE_AMOUNT + STAKE_ACCOUNT_RENT_EXEMPTION,
         data,
-        stake::program::id(),
+        program::id(),
         false,
         Epoch::default(),
     );
@@ -129,6 +127,11 @@ async fn success_update() {
         &voter_pubkey,
     )
     .await;
+
+    // move forward to after rewards payout
+    let first_normal_slot = context.genesis_config().epoch_schedule.first_normal_slot;
+    context.warp_to_slot(first_normal_slot + 1).unwrap();
+
     let pre_reserve_lamports = context
         .banks_client
         .get_account(stake_pool_accounts.reserve_stake.pubkey())

@@ -10,7 +10,7 @@ use {
         borsh1::try_from_slice_unchecked,
         instruction::{AccountMeta, Instruction, InstructionError},
         pubkey::Pubkey,
-        stake, system_instruction, sysvar,
+        sysvar,
     },
     solana_program_test::*,
     solana_sdk::{
@@ -18,6 +18,8 @@ use {
         transaction::{Transaction, TransactionError},
         transport::TransportError,
     },
+    solana_stake_interface as stake,
+    solana_system_interface::instruction as system_instruction,
     spl_stake_pool::{
         error::StakePoolError, find_transient_stake_program_address, id, instruction, state,
         MINIMUM_RESERVE_LAMPORTS,
@@ -27,6 +29,10 @@ use {
 
 async fn setup() -> (ProgramTestContext, StakePoolAccounts, ValidatorStakeAccount) {
     let mut context = program_test().start_with_context().await;
+    let first_normal_slot = context.genesis_config().epoch_schedule.first_normal_slot;
+    let slot = first_normal_slot + 1;
+    context.warp_to_slot(slot).unwrap();
+
     let stake_pool_accounts = StakePoolAccounts::default();
     stake_pool_accounts
         .initialize_stake_pool(
@@ -540,7 +546,7 @@ async fn success_with_deactivating_transient_stake() {
         validators: vec![state::ValidatorStakeInfo {
             status: state::StakeStatus::DeactivatingAll.into(),
             vote_account_address: validator_stake.vote.pubkey(),
-            last_update_epoch: 0.into(),
+            last_update_epoch: 14.into(), // first normal epoch
             active_stake_lamports: (stake_rent + current_minimum_delegation).into(),
             transient_stake_lamports: (TEST_STAKE_AMOUNT + stake_rent * 2).into(),
             transient_seed_suffix: validator_stake.transient_stake_seed.into(),

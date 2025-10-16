@@ -774,7 +774,7 @@ pub enum StakePoolInstruction {
     ///   3. `[w]` User account to burn pool tokens
     ///   4. `[w]` Reserve stake account, to withdraw SOL
     ///   5. `[w]` User WSOL token account (ATA for native mint, So111...); will
-    ///           receive lamports and be `sync_native`-ed to reflect WSOL
+    ///      receive lamports and be `sync_native`-ed to reflect WSOL
     ///   6. `[w]` Account to receive pool fee tokens
     ///   7. `[w]` Pool token mint account
     ///   8. `[]` Clock sysvar
@@ -1691,7 +1691,7 @@ pub fn cleanup_removed_validator_entries(
     validator_list_storage: &Pubkey,
 ) -> Instruction {
     let accounts = vec![
-        AccountMeta::new_readonly(*stake_pool, false),
+        AccountMeta::new(*stake_pool, false),
         AccountMeta::new(*validator_list_storage, false),
     ];
     Instruction {

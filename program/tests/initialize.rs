@@ -12,7 +12,7 @@ use {
         instruction::{AccountMeta, Instruction},
         program_pack::Pack,
         pubkey::Pubkey,
-        stake, system_instruction, sysvar,
+        sysvar,
     },
     solana_program_test::*,
     solana_sdk::{
@@ -21,7 +21,11 @@ use {
         transaction::{Transaction, TransactionError},
         transport::TransportError,
     },
-    spl_stake_pool::{error, id, instruction, state, MINIMUM_RESERVE_LAMPORTS},
+    solana_stake_interface as stake,
+    solana_system_interface::instruction as system_instruction,
+    spl_stake_pool::{
+        error, id, instruction, state, MAX_VALIDATORS_IN_POOL, MINIMUM_RESERVE_LAMPORTS,
+    },
     spl_token_2022::extension::ExtensionType,
     test_case::test_case,
 };
@@ -1627,6 +1631,33 @@ async fn fail_with_incorrect_mint_decimals() {
         TransactionError::InstructionError(
             2,
             InstructionError::Custom(error::StakePoolError::IncorrectMintDecimals as u32),
+        )
+    );
+}
+
+#[tokio::test]
+async fn fail_with_too_many_validators() {
+    let (mut banks_client, payer, recent_blockhash) = program_test().start().await;
+    let stake_pool_accounts = StakePoolAccounts {
+        max_validators: MAX_VALIDATORS_IN_POOL + 1,
+        ..Default::default()
+    };
+    let error = stake_pool_accounts
+        .initialize_stake_pool(
+            &mut banks_client,
+            &payer,
+            &recent_blockhash,
+            MINIMUM_RESERVE_LAMPORTS,
+        )
+        .await
+        .unwrap_err()
+        .unwrap();
+
+    assert_eq!(
+        error,
+        TransactionError::InstructionError(
+            2,
+            InstructionError::Custom(error::StakePoolError::TooManyValidatorsInPool as u32),
         )
     );
 }

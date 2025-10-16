@@ -7,16 +7,19 @@ mod helpers;
 
 use {
     helpers::*,
-    solana_program::{borsh1::try_from_slice_unchecked, pubkey::Pubkey, stake},
+    solana_program::{borsh1::try_from_slice_unchecked, pubkey::Pubkey},
     solana_program_test::*,
     solana_sdk::{
         hash::Hash,
         instruction::InstructionError,
         signature::Signer,
-        stake::state::{Authorized, Lockup, StakeStateV2},
-        system_instruction,
         transaction::{Transaction, TransactionError},
     },
+    solana_stake_interface::{
+        instruction as stake_instruction,
+        state::{Authorized, Lockup, StakeStateV2},
+    },
+    solana_system_interface::instruction as system_instruction,
     spl_stake_pool::{
         error::StakePoolError, find_stake_program_address, find_transient_stake_program_address,
         find_withdraw_authority_program_address, id, state::StakePool, MINIMUM_RESERVE_LAMPORTS,
@@ -259,7 +262,7 @@ async fn check_ignored_hijacked_transient_stake(
                 &transient_stake_address,
                 stake_rent + MINIMUM_RESERVE_LAMPORTS,
             ),
-            stake::instruction::initialize(
+            stake_instruction::initialize(
                 &transient_stake_address,
                 hijack_authorized.unwrap_or(&Authorized::auto(&withdraw_authority)),
                 hijack_lockup.unwrap_or(&Lockup::default()),
@@ -424,7 +427,7 @@ async fn check_ignored_hijacked_validator_stake(
                 &stake_account.stake_account,
                 stake_rent + MINIMUM_RESERVE_LAMPORTS,
             ),
-            stake::instruction::initialize(
+            stake_instruction::initialize(
                 &stake_account.stake_account,
                 hijack_authorized.unwrap_or(&Authorized::auto(&withdraw_authority)),
                 hijack_lockup.unwrap_or(&Lockup::default()),
