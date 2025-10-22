@@ -3551,40 +3551,27 @@ impl Processor {
         // 2. Create the ATA if missing (idempotent)
         // ──────────────────────────────────────────────────────────────────────
 
-        if user_wsol_info.data_is_empty() {
-            // The associated-token-program create requires these accounts:
-            //   payer, associated_token, owner, mint, system_program, token_program
-            // Ensure payer is writable + signer in your instruction metas.
-            let create_ix =
-                spl_associated_token_account::instruction::create_associated_token_account(
-                    fee_payer_info.key,     // payer
-                    &user_pubkey,           // owner of ATA
-                    wsol_mint_info.key,     // native mint
-                    token_program_info.key, // token program id
-                );
-            invoke(
-                &create_ix,
-                &[
-                    fee_payer_info.clone(),
-                    user_wsol_info.clone(),
-                    user_owner_info.clone(), // == user_pubkey as a system account
-                    wsol_mint_info.clone(),
-                    system_program_info.clone(),
-                    token_program_info.clone(),
-                ],
-            )?;
-        } else {
-            // Account exists, verify it's valid
-            let token_account = spl_token::state::Account::unpack(&user_wsol_info.data.borrow())?;
-            if token_account.mint != *wsol_mint_info.key || token_account.owner != user_pubkey {
-                msg!("Account already exists, but is invalid");
-                msg!("token_account.mint: {:?}", token_account.mint);
-                msg!("wsol_mint_info.key: {:?}", wsol_mint_info.key);
-                msg!("token_account.owner: {:?}", token_account.owner);
-                msg!("user_pubkey: {:?}", user_pubkey);
-                return Err(ProgramError::InvalidAccountData);
-            }
-        }
+        // Use idempotent create to safely initialize the ATA if missing
+        // Accounts required by the associated-token-program:
+        //   payer, associated_token, owner, mint, system_program, token_program
+        let create_ix = spl_associated_token_account::instruction::
+            create_associated_token_account_idempotent(
+                fee_payer_info.key,     // payer
+                &user_pubkey,           // owner of ATA
+                wsol_mint_info.key,     // native mint
+                token_program_info.key, // token program id
+            );
+        invoke(
+            &create_ix,
+            &[
+                fee_payer_info.clone(),
+                user_wsol_info.clone(),
+                user_owner_info.clone(), // == user_pubkey as a system account
+                wsol_mint_info.clone(),
+                system_program_info.clone(),
+                token_program_info.clone(),
+            ],
+        )?;
 
         // ──────────────────────────────────────────────────────────────────────
         // 3. Process the withdrawal
