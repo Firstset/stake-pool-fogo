@@ -3469,9 +3469,10 @@ impl Processor {
         let user_owner_info = next_account_info(account_info_iter)?; // 14 [] the user's system account (owner of ATA)
         let system_program_info = next_account_info(account_info_iter)?; // 15 []
         let program_signer_info = next_account_info(account_info_iter)?; // 16 [] (program signer)
+        let associated_token_program_info = next_account_info(account_info_iter)?; // 17 [] (associated token program)
 
         // Optional SOL withdraw authority (needs to be at the end since it is not always present)
-        let sol_withdraw_auth_res = next_account_info(account_info_iter); // 17 optional [s]
+        let sol_withdraw_auth_res = next_account_info(account_info_iter); // 18 optional [s]
 
         // ──────────────────────────────────────────────────────────────────────
         // 1. Basic sanity checks
@@ -3479,6 +3480,11 @@ impl Processor {
 
         // Check the system program
         check_system_program(system_program_info.key)?;
+
+        // Check the associated token program
+        if *associated_token_program_info.key != spl_associated_token_account::id() {
+            return Err(ProgramError::IncorrectProgramId);
+        }        
 
         // Check that the WSOL mint is the native mint (So11111111111111111111111111111111111111112)
         if *wsol_mint_info.key != native_mint::id() {
@@ -3546,6 +3552,7 @@ impl Processor {
                 wsol_mint_info.clone(),
                 system_program_info.clone(),
                 token_program_info.clone(),
+                associated_token_program_info.clone(),
             ],
         )?;
 

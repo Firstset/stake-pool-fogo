@@ -786,7 +786,8 @@ pub enum StakePoolInstruction {
     ///  14. `[]` User owner (system account that owns the WSOL ATA)
     ///  15. `[]` System Program
     ///  16. `[w]` Program signer PDA (only present in WSOL path)
-    ///  17. `[s]` (Optional) Stake pool SOL withdraw authority
+    ///  17. `[]` Associated token program id
+    ///  18. `[s]` (Optional) Stake pool SOL withdraw authority
     WithdrawWsolWithSession(u64),
 }
 
@@ -2524,6 +2525,7 @@ pub fn withdraw_wsol_with_session(
     user_owner: &Pubkey,
     system_program_id: &Pubkey,
     program_signer: &Pubkey,
+    associated_token_program_id: &Pubkey,
     pool_tokens_in: u64,
 ) -> Instruction {
     // Same account order as WithdrawSol, with the destination replaced by the
@@ -2548,7 +2550,8 @@ pub fn withdraw_wsol_with_session(
     accounts.push(AccountMeta::new_readonly(*user_owner, false));
     accounts.push(AccountMeta::new_readonly(*system_program_id, false));
     accounts.push(AccountMeta::new(*program_signer, false));
-
+    accounts.push(AccountMeta::new_readonly(*associated_token_program_id, false));
+    
     // Optional SOL withdraw authority (needs to be at the end)
     if let Some(sol_withdraw_authority) = sol_withdraw_authority {
         accounts.push(AccountMeta::new_readonly(*sol_withdraw_authority, true));
