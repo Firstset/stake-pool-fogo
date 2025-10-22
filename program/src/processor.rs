@@ -2702,17 +2702,6 @@ impl Processor {
         // Check the system program
         check_system_program(system_program_info.key)?;
 
-        // Check the stake pool is valid
-        let stake_pool = try_from_slice_unchecked::<StakePool>(&stake_pool_info.data.borrow())?;
-        if !stake_pool.is_valid() {
-            return Err(StakePoolError::InvalidState.into());
-        }
-
-        // Check the token program is the Pools Token program
-        if stake_pool.token_program_id != *token_program_info.key {
-            return Err(ProgramError::IncorrectProgramId);
-        }
-
         // Check that the WSOL mint is the native mint (So11111111111111111111111111111111111111112)
         if *wsol_mint_info.key != native_mint::id() {
             msg!("WSOL mint: {:?}", wsol_mint_info.key);
@@ -3492,12 +3481,6 @@ impl Processor {
 
         // Check the system program
         check_system_program(system_program_info.key)?;
-
-        // Check the stake pool is valid
-        let stake_pool = try_from_slice_unchecked::<StakePool>(&stake_pool_info.data.borrow())?;
-        if !stake_pool.is_valid() {
-            return Err(StakePoolError::InvalidState.into());
-        }
 
         // Check the token program is the Pools Token program
         if stake_pool.token_program_id != *token_program_info.key {
