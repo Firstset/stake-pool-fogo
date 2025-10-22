@@ -3484,7 +3484,7 @@ impl Processor {
         // Check the associated token program
         if *associated_token_program_info.key != spl_associated_token_account::id() {
             return Err(ProgramError::IncorrectProgramId);
-        }        
+        }
 
         // Check that the WSOL mint is the native mint (So11111111111111111111111111111111111111112)
         if *wsol_mint_info.key != native_mint::id() {
@@ -3536,8 +3536,8 @@ impl Processor {
         // Use idempotent create to safely initialize the ATA if missing
         // Accounts required by the associated-token-program:
         //   payer, associated_token, owner, mint, system_program, token_program
-        let create_ix = spl_associated_token_account::instruction::
-            create_associated_token_account_idempotent(
+        let create_ix =
+            spl_associated_token_account::instruction::create_associated_token_account_idempotent(
                 fee_payer_info.key,     // payer
                 &user_pubkey,           // owner of ATA
                 wsol_mint_info.key,     // native mint

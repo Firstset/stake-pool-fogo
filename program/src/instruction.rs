@@ -2550,8 +2550,11 @@ pub fn withdraw_wsol_with_session(
     accounts.push(AccountMeta::new_readonly(*user_owner, false));
     accounts.push(AccountMeta::new_readonly(*system_program_id, false));
     accounts.push(AccountMeta::new(*program_signer, false));
-    accounts.push(AccountMeta::new_readonly(*associated_token_program_id, false));
-    
+    accounts.push(AccountMeta::new_readonly(
+        *associated_token_program_id,
+        false,
+    ));
+
     // Optional SOL withdraw authority (needs to be at the end)
     if let Some(sol_withdraw_authority) = sol_withdraw_authority {
         accounts.push(AccountMeta::new_readonly(*sol_withdraw_authority, true));
