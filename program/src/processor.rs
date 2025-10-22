@@ -2792,14 +2792,12 @@ impl Processor {
             program_signer_info.key, // owner/authority = program_signer PDA
         )?;
 
-        // `program_signer_info` (program_signer) must sign this CPI,
-        // so we reuse `program_signer_seeds` that you prepared earlier.
         invoke(
             &init_ix,
             &[
                 transient_wsol_info.clone(), // token account (not signer)
                 wsol_mint_info.clone(),      // mint
-            ], // signs as program_signer_info
+            ],
         )?;
 
         // ──────────────────────────────────────────────────────────────────────
