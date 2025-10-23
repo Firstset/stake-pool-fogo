@@ -2702,17 +2702,6 @@ impl Processor {
         // Check the system program
         check_system_program(system_program_info.key)?;
 
-        // Check the stake pool is valid
-        let stake_pool = try_from_slice_unchecked::<StakePool>(&stake_pool_info.data.borrow())?;
-        if !stake_pool.is_valid() {
-            return Err(StakePoolError::InvalidState.into());
-        }
-
-        // Check the token program is the Pools Token program
-        if stake_pool.token_program_id != *token_program_info.key {
-            return Err(ProgramError::IncorrectProgramId);
-        }
-
         // Check that the WSOL mint is the native mint (So11111111111111111111111111111111111111112)
         if *wsol_mint_info.key != native_mint::id() {
             msg!("WSOL mint: {:?}", wsol_mint_info.key);
@@ -2803,14 +2792,12 @@ impl Processor {
             program_signer_info.key, // owner/authority = program_signer PDA
         )?;
 
-        // `program_signer_info` (program_signer) must sign this CPI,
-        // so we reuse `program_signer_seeds` that you prepared earlier.
         invoke(
             &init_ix,
             &[
                 transient_wsol_info.clone(), // token account (not signer)
                 wsol_mint_info.clone(),      // mint
-            ], // signs as program_signer_info
+            ],
         )?;
 
         // ──────────────────────────────────────────────────────────────────────
@@ -3482,9 +3469,10 @@ impl Processor {
         let user_owner_info = next_account_info(account_info_iter)?; // 14 [] the user's system account (owner of ATA)
         let system_program_info = next_account_info(account_info_iter)?; // 15 []
         let program_signer_info = next_account_info(account_info_iter)?; // 16 [] (program signer)
+        let associated_token_program_info = next_account_info(account_info_iter)?; // 17 [] (associated token program)
 
         // Optional SOL withdraw authority (needs to be at the end since it is not always present)
-        let sol_withdraw_auth_res = next_account_info(account_info_iter); // 17 optional [s]
+        let sol_withdraw_auth_res = next_account_info(account_info_iter); // 18 optional [s]
 
         // ──────────────────────────────────────────────────────────────────────
         // 1. Basic sanity checks
@@ -3493,14 +3481,8 @@ impl Processor {
         // Check the system program
         check_system_program(system_program_info.key)?;
 
-        // Check the stake pool is valid
-        let stake_pool = try_from_slice_unchecked::<StakePool>(&stake_pool_info.data.borrow())?;
-        if !stake_pool.is_valid() {
-            return Err(StakePoolError::InvalidState.into());
-        }
-
-        // Check the token program is the Pools Token program
-        if stake_pool.token_program_id != *token_program_info.key {
+        // Check the associated token program
+        if *associated_token_program_info.key != spl_associated_token_account::id() {
             return Err(ProgramError::IncorrectProgramId);
         }
 
@@ -3551,40 +3533,27 @@ impl Processor {
         // 2. Create the ATA if missing (idempotent)
         // ──────────────────────────────────────────────────────────────────────
 
-        if user_wsol_info.data_is_empty() {
-            // The associated-token-program create requires these accounts:
-            //   payer, associated_token, owner, mint, system_program, token_program
-            // Ensure payer is writable + signer in your instruction metas.
-            let create_ix =
-                spl_associated_token_account::instruction::create_associated_token_account(
-                    fee_payer_info.key,     // payer
-                    &user_pubkey,           // owner of ATA
-                    wsol_mint_info.key,     // native mint
-                    token_program_info.key, // token program id
-                );
-            invoke(
-                &create_ix,
-                &[
-                    fee_payer_info.clone(),
-                    user_wsol_info.clone(),
-                    user_owner_info.clone(), // == user_pubkey as a system account
-                    wsol_mint_info.clone(),
-                    system_program_info.clone(),
-                    token_program_info.clone(),
-                ],
-            )?;
-        } else {
-            // Account exists, verify it's valid
-            let token_account = spl_token::state::Account::unpack(&user_wsol_info.data.borrow())?;
-            if token_account.mint != *wsol_mint_info.key || token_account.owner != user_pubkey {
-                msg!("Account already exists, but is invalid");
-                msg!("token_account.mint: {:?}", token_account.mint);
-                msg!("wsol_mint_info.key: {:?}", wsol_mint_info.key);
-                msg!("token_account.owner: {:?}", token_account.owner);
-                msg!("user_pubkey: {:?}", user_pubkey);
-                return Err(ProgramError::InvalidAccountData);
-            }
-        }
+        // Use idempotent create to safely initialize the ATA if missing
+        // Accounts required by the associated-token-program:
+        //   payer, associated_token, owner, mint, system_program, token_program
+        let create_ix =
+            spl_associated_token_account::instruction::create_associated_token_account_idempotent(
+                fee_payer_info.key,     // payer
+                &user_pubkey,           // owner of ATA
+                wsol_mint_info.key,     // native mint
+                token_program_info.key, // token program id
+            );
+        invoke(
+            &create_ix,
+            &[
+                fee_payer_info.clone(),
+                user_wsol_info.clone(),
+                user_owner_info.clone(), // == user_pubkey as a system account
+                wsol_mint_info.clone(),
+                system_program_info.clone(),
+                token_program_info.clone(),
+            ],
+        )?;
 
         // ──────────────────────────────────────────────────────────────────────
         // 3. Process the withdrawal

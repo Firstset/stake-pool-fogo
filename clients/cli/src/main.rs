@@ -1704,6 +1704,7 @@ fn command_withdraw_wsol_with_session(
             &user_pubkey,
             &system_program::id(),
             &program_signer,
+            &spl_associated_token_account::id(),
             pool_amount_tokens,
         )
     } else {
@@ -1724,6 +1725,7 @@ fn command_withdraw_wsol_with_session(
             &user_pubkey,
             &system_program::id(),
             &program_signer,
+            &spl_associated_token_account::id(),
             pool_amount_tokens,
         )
     };

@@ -9,7 +9,7 @@ import {
   TransactionInstruction,
 } from '@solana/web3.js';
 import * as BufferLayout from '@solana/buffer-layout';
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { InstructionType, encodeData, decodeData } from './utils';
 import {
   METADATA_MAX_NAME_LENGTH,
@@ -1137,6 +1137,7 @@ export class StakePoolInstruction {
       { pubkey: params.userOwner, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       { pubkey: params.programSigner, isSigner: false, isWritable: true },
+      { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
     );
 
     // Optional SOL withdraw authority (needs to be at the end since it is not always present)
