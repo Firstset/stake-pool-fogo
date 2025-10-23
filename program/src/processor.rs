@@ -3552,7 +3552,6 @@ impl Processor {
                 wsol_mint_info.clone(),
                 system_program_info.clone(),
                 token_program_info.clone(),
-                associated_token_program_info.clone(),
             ],
         )?;
 
