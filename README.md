@@ -1,6 +1,8 @@
-# stake-pool program
+# Fogo stake-pool program
 
-Full documentation is available at <https://spl.solana.com/stake-pool>
+This repository contains a fork of the SPL Stake Pool program maintained by [Firstset AG](https://firstset.xyz) which adds support for the Fogo blockchain.
+
+Full documentation of the SPL Stake Pool program is available at <https://spl.solana.com/stake-pool>
 
 The command-line interface tool is available in the `./cli` directory.
 
