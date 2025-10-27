@@ -13,6 +13,8 @@ Python bindings are available in the `./py` directory.
 The repository [README](https://github.com/solana-labs/solana-program-library#audits)
 contains information about program audits.
 
+An audit of the changes made by Firstset in this fork was conducted by Neodyme and is available [here](./Neodyme_Report.pdf).
+
 ## Development
 
 ### Program
