@@ -48,12 +48,19 @@ import {
   DEVNET_STAKE_POOL_PROGRAM_ID,
   FOGO_TESTNET_STAKE_POOL_PROGRAM_ID,
   FOGO_DEVNET_STAKE_POOL_PROGRAM_ID,
+  FOGO_MAINNET_STAKE_POOL_PROGRAM_ID,
 } from './constants';
 import { create } from 'superstruct';
 import BN from 'bn.js';
 
 export type { StakePool, AccountType, ValidatorList, ValidatorStakeInfo } from './layouts';
-export { DEVNET_STAKE_POOL_PROGRAM_ID, STAKE_POOL_PROGRAM_ID } from './constants';
+export {
+  DEVNET_STAKE_POOL_PROGRAM_ID,
+  STAKE_POOL_PROGRAM_ID,
+  FOGO_TESTNET_STAKE_POOL_PROGRAM_ID,
+  FOGO_DEVNET_STAKE_POOL_PROGRAM_ID,
+  FOGO_MAINNET_STAKE_POOL_PROGRAM_ID,
+} from './constants';
 export * from './instructions';
 export { StakePoolLayout, ValidatorListLayout, ValidatorStakeInfoLayout } from './layouts';
 
@@ -83,12 +90,15 @@ export interface StakePoolAccounts {
 }
 
 export function getStakePoolProgramId(rpcEndpoint: string): PublicKey {
-  if (rpcEndpoint.includes('devnet')) {
-    return DEVNET_STAKE_POOL_PROGRAM_ID;
+  if (rpcEndpoint.includes('testnet.fogo')) {
+    return FOGO_TESTNET_STAKE_POOL_PROGRAM_ID;
   } else if (rpcEndpoint.includes('firstset')) {
     return FOGO_DEVNET_STAKE_POOL_PROGRAM_ID;
-  } else if (rpcEndpoint.includes('testnet.fogo')) {
-    return FOGO_TESTNET_STAKE_POOL_PROGRAM_ID;
+  } else if (rpcEndpoint.includes('fogo')) {
+    // Fogo mainnet (e.g., mainnet.fogo.io or fogo.io)
+    return FOGO_MAINNET_STAKE_POOL_PROGRAM_ID;
+  } else if (rpcEndpoint.includes('devnet')) {
+    return DEVNET_STAKE_POOL_PROGRAM_ID;
   } else {
     return STAKE_POOL_PROGRAM_ID;
   }
