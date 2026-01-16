@@ -236,8 +236,10 @@ async def service_mode(
                     print(f"Updating stake pool for epoch {epoch} done")
                 except Exception as e:
                     print(f"Error when updating the pool: {e}")
-                    # one of the potential reasons is there are some transient stake accounts in an unexpected state
-                    # for example, the total amount of stakes to be activated hits the epoch warming up limit and it takes more epochs to become fully active
+                    # one of the potential reasons is there are some transient stake accounts
+                    # in an unexpected state for example, the total amount of stakes to be
+                    # activated hits the epoch warming up limit and it takes more epochs to
+                    # become fully active
                     # in this case, we retry to update the pool without merging the stake accounts
                     # ref: https://docs.anza.xyz/consensus/stake-delegation-and-rewards#stake-warmup-cooldown-withdrawal
                     await update_stake_pool(
