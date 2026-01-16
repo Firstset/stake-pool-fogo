@@ -209,7 +209,6 @@ async def service_mode(
     dry_run: bool = False,
 ):
     async_client = await get_client(endpoint)
-    current_epoch = None
     rebalanced_in_current_epoch = False
     print("Starting service mode - monitoring epoch progress...")
 
@@ -219,12 +218,32 @@ async def service_mode(
 
             print(f"Current epoch: {epoch}, progress: {progress:.2%}")
 
-            if epoch != current_epoch:
-                print(f"New epoch detected: {epoch} (previous: {current_epoch})")
-                print(f"Updating stake pool for new epoch {epoch}")
-                await update_stake_pool(async_client, staker, stake_pool_address)
-                print(f"Updating stake pool for new epoch {epoch} done")
-                current_epoch = epoch
+            resp = await async_client.get_account_info(
+                stake_pool_address, commitment=Confirmed
+            )
+            data = resp.value.data if resp.value else bytes()
+            stake_pool = StakePool.decode(data)
+
+            print(
+                f"Stake pool last update epoch {stake_pool.last_update_epoch}, current epoch {epoch}"
+            )
+
+            if stake_pool.last_update_epoch != epoch:
+                print(f"The pool has not been updated for epoch {epoch} yet")
+                print(f"Updating stake pool for epoch {epoch}")
+                try:
+                    await update_stake_pool(async_client, staker, stake_pool_address)
+                    print(f"Updating stake pool for epoch {epoch} done")
+                except Exception as e:
+                    print(f"Error when updating the pool: {e}")
+                    # one of the potential reasons is there are some transient stake accounts in an unexpected state
+                    # for example, the total amount of stakes to be activated hits the epoch warming up limit and it takes more epochs to become fully active
+                    # in this case, we retry to update the pool without merging the stake accounts
+                    # ref: https://docs.anza.xyz/consensus/stake-delegation-and-rewards#stake-warmup-cooldown-withdrawal
+                    await update_stake_pool(
+                        async_client, staker, stake_pool_address, True
+                    )
+                    print(f"Updating stake pool without merges for epoch {epoch} done")
                 rebalanced_in_current_epoch = False
 
             if progress >= 0.95 and not rebalanced_in_current_epoch:
