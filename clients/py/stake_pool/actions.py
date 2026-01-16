@@ -417,7 +417,7 @@ async def withdraw_stake(
     await client.send_transaction(txn, opts=OPTS)
 
 
-async def update_stake_pool(client: AsyncClient, payer: Keypair, stake_pool_address: Pubkey):
+async def update_stake_pool(client: AsyncClient, payer: Keypair, stake_pool_address: Pubkey, no_merge=False):
     """Create and send all instructions to completely update a stake pool after epoch change."""
     resp = await client.get_account_info(stake_pool_address, commitment=Confirmed)
     data = resp.value.data if resp.value else bytes()
@@ -462,7 +462,7 @@ async def update_stake_pool(client: AsyncClient, payer: Keypair, stake_pool_addr
                     stake_program_id=STAKE_PROGRAM_ID,
                     validator_and_transient_stake_pairs=validator_and_transient_stake_pairs,
                     start_index=start_index,
-                    no_merge=False,
+                    no_merge=no_merge,
                 )
             )
         )
