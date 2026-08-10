@@ -220,6 +220,25 @@ def test_equalized_stake_limits_the_increases_to_the_reserve_balance():
     assert changes_by_index(changes) == {1: 2 * UNIT, 2: 1 * UNIT, 3: -4 * UNIT}
 
 
+def test_equalized_stake_reports_validators_the_reserve_cannot_reach(capsys):
+    validators = [validator(1, 5 * UNIT), validator(2, 1 * UNIT)]
+    # both are below the 10 units the pool would like them at, but the reserve only
+    # covers levelling them up to 2 units, which the first one is already above
+    changes = plan_equalized_stake(
+        validators,
+        no_external_stake(validators),
+        distributable_lamports=20 * UNIT,
+        cap_lamports=NO_CAP,
+        usable_reserve_lamports=1 * UNIT,
+        stake_rent_exemption=0,
+    )
+    assert changes_by_index(changes) == {2: 1 * UNIT}
+    # the one left out is not reported as an increase of a negative amount
+    printed = capsys.readouterr().out
+    assert "already staked above" in printed
+    assert "increase of -" not in printed
+
+
 def test_equalized_stake_reserves_the_rent_exemption_of_every_increase():
     validators = [validator(1, 1 * UNIT), validator(2, 1 * UNIT)]
     usable_reserve_lamports = 2 * UNIT + 2 * STAKE_RENT_EXEMPTION

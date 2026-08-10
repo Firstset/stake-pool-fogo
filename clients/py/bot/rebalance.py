@@ -318,7 +318,12 @@ not enough left in the reserve")
             stake_from_pool(external_stakes[index], reachable_level, cap_lamports)
             - validator.active_stake_lamports
         )
-        if lamports_to_increase < MINIMUM_ACTIVE_STAKE:
+        if lamports_to_increase <= 0:
+            # the reserve cannot even lift the least staked validators up to this one
+            print(f"Skipping increase on {validator.vote_account_address}, \
+currently at {to_sol(validator.active_stake_lamports)}, \
+already staked above the {to_sol(reachable_level)} the reserve covers")
+        elif lamports_to_increase < MINIMUM_ACTIVE_STAKE:
             print(f"Skipping increase on {validator.vote_account_address}, \
 currently at {to_sol(validator.active_stake_lamports)}, \
 increase of {to_sol(lamports_to_increase)} less than the minimum of {to_sol(MINIMUM_ACTIVE_STAKE)}")
